@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>帳號申請單</title>
+    <style>
+      :root {
+        --navy: #183b56;
+        --blue: #2e6f95;
+        --sky: #eaf4f8;
+        --ink: #1d2a33;
+        --muted: #61727d;
+        --line: #d5e1e7;
+        --danger: #b42318;
+        --success: #216e4e;
+        --card: #ffffff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: linear-gradient(135deg, #f4f8fa 0%, #eaf4f8 100%);
+        font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+        line-height: 1.6;
+      }
+      .shell { max-width: 780px; margin: 0 auto; padding: 30px 18px 52px; }
+      .hero { margin-bottom: 18px; }
+      .eyebrow { color: var(--blue); font-size: 13px; font-weight: 700; letter-spacing: .12em; }
+      h1 { color: var(--navy); font-size: clamp(26px, 5vw, 38px); line-height: 1.25; margin: 5px 0 8px; }
+      .subtitle { color: var(--muted); margin: 0; }
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(213, 225, 231, .9);
+        border-radius: 18px;
+        box-shadow: 0 14px 34px rgba(24, 59, 86, .08);
+        padding: 24px;
+        margin-top: 16px;
+      }
+      .section-title { display: flex; gap: 10px; align-items: center; color: var(--navy); font-size: 18px; margin: 0 0 16px; }
+      .section-title span { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--sky); color: var(--blue); font-size: 14px; font-weight: 800; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .field { display: flex; flex-direction: column; gap: 6px; }
+      .field.full { grid-column: 1 / -1; }
+      label { font-size: 14px; font-weight: 700; color: #31434e; }
+      .required::after { content: " *"; color: var(--danger); }
+      input, select {
+        appearance: none;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 11px 12px;
+        color: var(--ink);
+        background: #fff;
+        font: inherit;
+        outline: none;
+        transition: border .15s, box-shadow .15s;
+      }
+      input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(46, 111, 149, .14); }
+      input:disabled { background: #f3f6f7; color: #7c8a91; }
+      .hint { color: var(--muted); font-size: 12px; margin-top: -1px; }
+      .reason-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .reason-option { position: relative; }
+      .reason-option input { position: absolute; opacity: 0; pointer-events: none; }
+      .reason-option label { display: block; min-height: 80px; border: 1px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer; background: #fff; }
+      .reason-option label span { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 3px; }
+      .reason-option input:checked + label { border-color: var(--blue); background: var(--sky); box-shadow: 0 0 0 2px rgba(46,111,149,.10); }
+      .note { padding: 12px 14px; border-radius: 10px; background: #f7fafb; color: var(--muted); font-size: 13px; margin-top: 16px; }
+      .actions { display: flex; align-items: center; gap: 14px; margin-top: 22px; }
+      button { border: 0; border-radius: 10px; padding: 12px 20px; background: var(--navy); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+      button:hover { background: #0f2b40; }
+      button:disabled { opacity: .6; cursor: wait; }
+      .status { min-height: 24px; font-size: 14px; }
+      .status.error { color: var(--danger); }
+      .status.success { color: var(--success); }
+      .status a { color: var(--blue); font-weight: 700; }
+      .privacy { color: var(--muted); font-size: 12px; margin-top: 18px; }
+      .hidden { display: none !important; }
+      .submit-frame { position: absolute; width: 1px; height: 1px; border: 0; opacity: 0; pointer-events: none; }
+      .confirm-intro { color: var(--muted); margin-top: -4px; }
+      .summary { margin-top: 18px; border-top: 1px solid var(--line); }
+      .summary-row { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+      .summary-label { color: var(--muted); font-size: 14px; font-weight: 700; }
+      .summary-value { color: var(--ink); word-break: break-word; }
+      button.secondary { background: #eef3f5; color: var(--navy); }
+      button.secondary:hover { background: #dfe9ed; }
+      @media (max-width: 620px) {
+        .shell { padding: 22px 12px 40px; }
+        .card { padding: 18px 15px; border-radius: 14px; }
+        .grid, .reason-grid { grid-template-columns: 1fr; }
+        .field.full { grid-column: auto; }
+        .actions { flex-direction: column; align-items: stretch; }
+        button { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div class="eyebrow" id="schoolName">校務資訊服務</div>
+        <h1 id="formTitle">資通系統帳號註冊／註銷／異動申請單</h1>
+        <p class="subtitle">請依申請原因填寫資料；非新進人員只需填寫姓名。</p>
+      </header>
+
+      <div id="formPage">
+      <form id="applicationForm" method="post" target="submitFrame" novalidate>
+        <section class="card">
+          <h2 class="section-title"><span>1</span>選擇申請原因</h2>
+          <div class="reason-grid" role="radiogroup" aria-label="申請原因">
+            <div class="reason-option">
+              <input id="reason-new" name="reason" type="radio" value="新進人員" checked>
+              <label for="reason-new">新進人員<span>需填寫完整基本資料</span></label>
+            </div>
+            <div class="reason-option">
+              <input id="reason-leave" name="reason" type="radio" value="註銷／離職">
+              <label for="reason-leave">註銷／離職<span>只需填寫姓名</span></label>
+            </div>
+            <div class="reason-option">
+              <input id="reason-password" name="reason" type="radio" value="密碼重設">
+              <label for="reason-password">密碼重設<span>只需填寫姓名</span></label>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title"><span>2</span>申請人基本資料</h2>
+          <div class="grid">
+            <div class="field" id="titleField">
+              <label class="required" for="title">職稱</label>
+              <input id="title" name="title" maxlength="40" autocomplete="organization-title" placeholder="例如：教師、代理教師、行政人員">
+            </div>
+            <div class="field">
+              <label class="required" for="name">姓名</label>
+              <input id="name" name="name" maxlength="20" autocomplete="name" required>
+            </div>
+            <div class="field" id="birthField">
+              <label class="required" for="birthDate">出生年月日</label>
+              <input id="birthDate" name="birthDate" type="date" autocomplete="bday">
+              <div class="hint">送出後會自動轉為民國年格式。</div>
+            </div>
+            <div class="field" id="nationalIdField">
+              <label class="required" for="nationalId">身分證字號</label>
+              <input id="nationalId" name="nationalId" maxlength="10" autocapitalize="characters" autocomplete="off" placeholder="例如：A123456789">
+            </div>
+            <div class="field full" id="phoneField">
+              <label class="required" for="phone">聯絡電話</label>
+              <input id="phone" name="phone" maxlength="20" autocomplete="tel" placeholder="市話或手機皆可">
+            </div>
+          </div>
+          <div class="note" id="basicInfoNote">目前選擇「新進人員」，請填寫完整基本資料。</div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title"><span>3</span>送出申請</h2>
+          <div class="status" id="status" role="status" aria-live="polite"></div>
+          <div class="actions">
+            <button id="submitButton" type="submit">送出申請</button>
+            <span class="privacy">身分證字號僅供帳號申請作業使用。</span>
+          </div>
+        </section>
+      </form>
+      </div>
+
+      <section id="confirmPage" class="card hidden" aria-labelledby="confirmTitle">
+        <h2 id="confirmTitle" class="section-title"><span>✓</span>請確認申請資料</h2>
+        <p class="confirm-intro">請確認以下資料正確無誤；按下「確認送出」後，才會正式寫入 Google 試算表。</p>
+        <div id="confirmationSummary" class="summary" aria-live="polite"></div>
+        <div class="status" id="confirmStatus" role="status" aria-live="polite"></div>
+        <div class="actions">
+          <button id="backButton" class="secondary" type="button">返回修改</button>
+          <button id="confirmButton" type="button">確認送出</button>
+        </div>
+      </section>
+      <iframe name="submitFrame" id="submitFrame" class="submit-frame" title="表單送出結果"></iframe>
+    </main>
+
+    <script>
+      // 請將此網址換成 Apps Script 部署後的 Web App URL（結尾通常是 /exec）。
+      const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz5ot_ZLQXhOa2FXylJksgQsVGtNFzJfdbdrM2aJXybBjcA02BEC0zYXxTyzCvqCr751A/exec';
+      const form = document.getElementById('applicationForm');
+      const submitButton = document.getElementById('submitButton');
+      const status = document.getElementById('status');
+      const basicInfoNote = document.getElementById('basicInfoNote');
+      const submitFrame = document.getElementById('submitFrame');
+      const formPage = document.getElementById('formPage');
+      const confirmPage = document.getElementById('confirmPage');
+      const confirmationSummary = document.getElementById('confirmationSummary');
+      const confirmStatus = document.getElementById('confirmStatus');
+      const backButton = document.getElementById('backButton');
+      const confirmButton = document.getElementById('confirmButton');
+      const controlledFields = ['title', 'birthDate', 'nationalId', 'phone'];
+
+      function selectedReason() {
+        return document.querySelector('input[name="reason"]:checked').value;
+      }
+
+      function setStatus(message, kind) {
+        status.textContent = message || '';
+        status.className = 'status' + (kind ? ' ' + kind : '');
+      }
+
+      function setConfirmStatus(message, kind) {
+        confirmStatus.textContent = message || '';
+        confirmStatus.className = 'status' + (kind ? ' ' + kind : '');
+      }
+
+      function toggleBasicInfo() {
+        const isNew = selectedReason() === '新進人員';
+        ['titleField', 'birthField', 'nationalIdField', 'phoneField'].forEach((id) => {
+          document.getElementById(id).classList.toggle('hidden', !isNew);
+        });
+        controlledFields.forEach((id) => {
+          const element = document.getElementById(id);
+          element.disabled = !isNew;
+          element.required = isNew;
+          if (!isNew) element.value = '';
+        });
+        basicInfoNote.textContent = isNew
+          ? '目前選擇「新進人員」，請填寫完整基本資料。'
+          : '目前選擇的申請原因只需填寫姓名，其他基本資料不會寫入申請紀錄。';
+      }
+
+      function validTaiwanId(value) {
+        if (!/^[A-Z][12]\d{8}$/.test(value)) return false;
+        const letterValues = {
+          A: 10, B: 11, C: 12, D: 13, E: 14, F: 15, G: 16, H: 17,
+          I: 34, J: 18, K: 19, L: 20, M: 21, N: 22, O: 35, P: 23,
+          Q: 24, R: 25, S: 26, T: 27, U: 28, V: 29, W: 32, X: 30,
+          Y: 31, Z: 33,
+        };
+        const letterValue = letterValues[value.charAt(0)];
+        if (!letterValue) return false;
+        const digits = String(letterValue) + value.substring(1);
+        const weights = [1, 9, 8, 7, 6, 5, 4, 3, 2, 1, 1];
+        return digits.split('').reduce((sum, digit, index) => sum + Number(digit) * weights[index], 0) % 10 === 0;
+      }
+
+      function validateInput() {
+        const isNew = selectedReason() === '新進人員';
+        const name = document.getElementById('name').value.trim();
+        const nationalId = document.getElementById('nationalId').value.trim().toUpperCase();
+        if (!name) return '請填寫姓名。';
+        if (isNew && !validTaiwanId(nationalId)) return '請確認身分證字號格式與檢核碼。';
+        if (isNew && !document.getElementById('birthDate').value) return '請填寫出生年月日。';
+        if (isNew && !document.getElementById('title').value.trim()) return '請填寫職稱。';
+        if (isNew && !document.getElementById('phone').value.trim()) return '請填寫聯絡電話。';
+        return '';
+      }
+
+      function rocDateForDisplay(value) {
+        if (!value) return '不適用';
+        const parts = value.split('-');
+        return '民國' + (Number(parts[0]) - 1911) + '年' + parts[1] + '月' + parts[2] + '日';
+      }
+
+      function addSummaryRow(label, value) {
+        const row = document.createElement('div');
+        row.className = 'summary-row';
+        const labelElement = document.createElement('div');
+        labelElement.className = 'summary-label';
+        labelElement.textContent = label;
+        const valueElement = document.createElement('div');
+        valueElement.className = 'summary-value';
+        valueElement.textContent = value || '未填寫';
+        row.append(labelElement, valueElement);
+        confirmationSummary.appendChild(row);
+      }
+
+      function showConfirmationPage() {
+        const isNew = selectedReason() === '新進人員';
+        confirmationSummary.textContent = '';
+        addSummaryRow('申請原因', selectedReason());
+        addSummaryRow('職稱', isNew ? document.getElementById('title').value.trim() : '不適用');
+        addSummaryRow('姓名', document.getElementById('name').value.trim());
+        addSummaryRow('出生年月日', isNew ? rocDateForDisplay(document.getElementById('birthDate').value) : '不適用');
+        addSummaryRow('身分證字號', isNew ? document.getElementById('nationalId').value.trim().toUpperCase() : '不適用');
+        addSummaryRow('聯絡電話', isNew ? document.getElementById('phone').value.trim() : '不適用');
+        setConfirmStatus('');
+        confirmButton.classList.remove('hidden');
+        backButton.classList.remove('hidden');
+        formPage.classList.add('hidden');
+        confirmPage.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      document.querySelectorAll('input[name="reason"]').forEach((radio) => radio.addEventListener('change', toggleBasicInfo));
+      document.getElementById('nationalId').addEventListener('input', (event) => {
+        event.target.value = event.target.value.toUpperCase();
+      });
+      toggleBasicInfo();
+
+      form.action = BACKEND_URL;
+      if (BACKEND_URL.indexOf('請填入') === 0) {
+        setStatus('請先在 index.html 填入 Apps Script Web App URL。', 'error');
+      }
+
+      window.addEventListener('message', (event) => {
+        if (event.source !== submitFrame.contentWindow || !event.data) return;
+        submitButton.disabled = false;
+        confirmButton.disabled = false;
+        backButton.disabled = false;
+        if (event.data.ok) {
+          setConfirmStatus('資料已寫入 Google 試算表，資料編號：' + event.data.recordId + '。', 'success');
+          confirmButton.classList.add('hidden');
+          backButton.textContent = '重新填寫';
+          form.reset();
+          document.getElementById('reason-new').checked = true;
+          toggleBasicInfo();
+        } else {
+          setConfirmStatus(event.data.message || '送出失敗，請通知資訊組。', 'error');
+        }
+      });
+
+      backButton.addEventListener('click', () => {
+        confirmPage.classList.add('hidden');
+        formPage.classList.remove('hidden');
+        backButton.textContent = '返回修改';
+        setConfirmStatus('');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      confirmButton.addEventListener('click', () => {
+        if (BACKEND_URL.indexOf('請填入') === 0) return setConfirmStatus('請先在 index.html 填入 Apps Script Web App URL。', 'error');
+        confirmButton.disabled = true;
+        backButton.disabled = true;
+        setConfirmStatus('正在寫入 Google 試算表，請稍候……');
+        form.submit();
+      });
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (BACKEND_URL.indexOf('請填入') === 0) return setStatus('請先在 index.html 填入 Apps Script Web App URL。', 'error');
+        const validationMessage = validateInput();
+        if (validationMessage) return setStatus(validationMessage, 'error');
+        setStatus('');
+        showConfirmationPage();
+      });
+    </script>
+  </body>
+</html>
