@@ -85,6 +85,10 @@
       .summary-value { color: var(--ink); word-break: break-word; }
       button.secondary { background: #eef3f5; color: var(--navy); }
       button.secondary:hover { background: #dfe9ed; }
+      .success-page { text-align: center; padding: 42px 24px; }
+      .success-mark { display: inline-grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: #e8f5ee; color: var(--success); font-size: 30px; font-weight: 800; }
+      .success-page h2 { color: var(--navy); margin: 16px 0 8px; }
+      .success-page p { color: var(--muted); margin: 0 0 22px; }
       @media (max-width: 620px) {
         .shell { padding: 22px 12px 40px; }
         .card { padding: 18px 15px; border-radius: 14px; }
@@ -100,7 +104,7 @@
       <header class="hero">
         <div class="eyebrow" id="schoolName">校務資訊服務</div>
         <h1 id="formTitle">資通系統帳號註冊／註銷／異動申請單</h1>
-        <p class="subtitle">請依申請原因填寫資料；Email 為各類申請都需要填寫的聯絡資料。</p>
+        <p class="subtitle">請依申請原因填寫資料；新進人員需填寫 Email。</p>
       </header>
 
       <div id="formPage">
@@ -147,7 +151,7 @@
               <label class="required" for="phone">聯絡電話</label>
               <input id="phone" name="phone" maxlength="20" autocomplete="tel" placeholder="市話或手機皆可">
             </div>
-            <div class="field full">
+            <div class="field full" id="emailField">
               <label class="required" for="email">Email</label>
               <input id="email" name="email" type="email" maxlength="120" autocomplete="email" placeholder="例如：name@school.edu.tw" required>
             </div>
@@ -176,6 +180,12 @@
           <button id="confirmButton" type="button">確認送出</button>
         </div>
       </section>
+      <section id="successPage" class="card success-page hidden" aria-labelledby="successTitle">
+        <div class="success-mark" aria-hidden="true">✓</div>
+        <h2 id="successTitle">資料送出成功</h2>
+        <p>申請資料已成功送出，謝謝。</p>
+        <button id="newApplicationButton" type="button">重新填寫</button>
+      </section>
       <iframe name="submitFrame" id="submitFrame" class="submit-frame" title="表單送出結果"></iframe>
     </main>
 
@@ -193,7 +203,10 @@
       const confirmStatus = document.getElementById('confirmStatus');
       const backButton = document.getElementById('backButton');
       const confirmButton = document.getElementById('confirmButton');
-      const controlledFields = ['title', 'birthDate', 'nationalId', 'phone'];
+      const newApplicationButton = document.getElementById('newApplicationButton');
+      const emailField = document.getElementById('emailField');
+      const controlledFields = ['title', 'birthDate', 'nationalId', 'phone', 'email'];
+      const successPage = document.getElementById('successPage');
       let waitingForBackend = false;
       let fallbackTimer = null;
 
@@ -217,7 +230,7 @@
 
       function toggleBasicInfo() {
         const isNew = selectedReason() === '新進人員';
-        ['titleField', 'birthField', 'nationalIdField', 'phoneField'].forEach((id) => {
+        ['titleField', 'birthField', 'nationalIdField', 'phoneField', 'emailField'].forEach((id) => {
           document.getElementById(id).classList.toggle('hidden', !isNew);
         });
         controlledFields.forEach((id) => {
@@ -228,7 +241,7 @@
         });
         basicInfoNote.textContent = isNew
           ? '目前選擇「新進人員」，請填寫完整基本資料及 Email。'
-          : '目前選擇的申請原因只需填寫姓名與 Email，其他基本資料不會寫入申請紀錄。';
+          : '目前選擇的申請原因只需填寫姓名，其他基本資料不會寫入申請紀錄。';
       }
 
       function validTaiwanId(value) {
@@ -252,7 +265,7 @@
         const nationalId = document.getElementById('nationalId').value.trim().toUpperCase();
         const email = document.getElementById('email').value.trim();
         if (!name) return '請填寫姓名。';
-        if (!emailIsValid(email)) return '請填寫正確的 Email。';
+        if (isNew && !emailIsValid(email)) return '請填寫正確的 Email。';
         if (isNew && !validTaiwanId(nationalId)) return '請確認身分證字號格式與檢核碼。';
         if (isNew && !document.getElementById('birthDate').value) return '請填寫出生年月日。';
         if (isNew && !document.getElementById('title').value.trim()) return '請填寫職稱。';
@@ -284,8 +297,8 @@
         confirmationSummary.textContent = '';
         addSummaryRow('申請原因', selectedReason());
         addSummaryRow('姓名', document.getElementById('name').value.trim());
-        addSummaryRow('Email', document.getElementById('email').value.trim());
         if (isNew) {
+          addSummaryRow('Email', document.getElementById('email').value.trim());
           addSummaryRow('職稱', document.getElementById('title').value.trim());
           addSummaryRow('出生年月日', rocDateForDisplay(document.getElementById('birthDate').value));
           addSummaryRow('身分證字號', document.getElementById('nationalId').value.trim().toUpperCase());
@@ -313,12 +326,11 @@
         if (fallbackTimer) clearTimeout(fallbackTimer);
         confirmButton.disabled = false;
         backButton.disabled = false;
-        if (recordId) {
-          setConfirmStatus('資料已寫入 Google 試算表，資料編號：' + recordId + '。', 'success');
-        } else {
-          setConfirmStatus('資料已送出，請至 Google 試算表確認。', 'success');
-        }
         resetAfterSuccess();
+        confirmationSummary.textContent = '';
+        confirmPage.classList.add('hidden');
+        successPage.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
       document.querySelectorAll('input[name="reason"]').forEach((radio) => radio.addEventListener('change', toggleBasicInfo));
@@ -351,6 +363,13 @@
         formPage.classList.remove('hidden');
         backButton.textContent = '返回修改';
         setConfirmStatus('');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      newApplicationButton.addEventListener('click', () => {
+        successPage.classList.add('hidden');
+        formPage.classList.remove('hidden');
+        setStatus('');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
 
