@@ -100,7 +100,7 @@
       <header class="hero">
         <div class="eyebrow" id="schoolName">校務資訊服務</div>
         <h1 id="formTitle">資通系統帳號註冊／註銷／異動申請單</h1>
-        <p class="subtitle">請依申請原因填寫資料；非新進人員只需填寫姓名。</p>
+        <p class="subtitle">請依申請原因填寫資料；Email 為各類申請都需要填寫的聯絡資料。</p>
       </header>
 
       <div id="formPage">
@@ -147,8 +147,12 @@
               <label class="required" for="phone">聯絡電話</label>
               <input id="phone" name="phone" maxlength="20" autocomplete="tel" placeholder="市話或手機皆可">
             </div>
+            <div class="field full">
+              <label class="required" for="email">Email</label>
+              <input id="email" name="email" type="email" maxlength="120" autocomplete="email" placeholder="例如：name@school.edu.tw" required>
+            </div>
           </div>
-          <div class="note" id="basicInfoNote">目前選擇「新進人員」，請填寫完整基本資料。</div>
+          <div class="note" id="basicInfoNote">目前選擇「新進人員」，請填寫完整基本資料及 Email。</div>
         </section>
 
         <section class="card">
@@ -205,6 +209,10 @@
         confirmStatus.className = 'status' + (kind ? ' ' + kind : '');
       }
 
+      function emailIsValid(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      }
+
       function toggleBasicInfo() {
         const isNew = selectedReason() === '新進人員';
         ['titleField', 'birthField', 'nationalIdField', 'phoneField'].forEach((id) => {
@@ -217,8 +225,8 @@
           if (!isNew) element.value = '';
         });
         basicInfoNote.textContent = isNew
-          ? '目前選擇「新進人員」，請填寫完整基本資料。'
-          : '目前選擇的申請原因只需填寫姓名，其他基本資料不會寫入申請紀錄。';
+          ? '目前選擇「新進人員」，請填寫完整基本資料及 Email。'
+          : '目前選擇的申請原因只需填寫姓名與 Email，其他基本資料不會寫入申請紀錄。';
       }
 
       function validTaiwanId(value) {
@@ -240,7 +248,9 @@
         const isNew = selectedReason() === '新進人員';
         const name = document.getElementById('name').value.trim();
         const nationalId = document.getElementById('nationalId').value.trim().toUpperCase();
+        const email = document.getElementById('email').value.trim();
         if (!name) return '請填寫姓名。';
+        if (!emailIsValid(email)) return '請填寫正確的 Email。';
         if (isNew && !validTaiwanId(nationalId)) return '請確認身分證字號格式與檢核碼。';
         if (isNew && !document.getElementById('birthDate').value) return '請填寫出生年月日。';
         if (isNew && !document.getElementById('title').value.trim()) return '請填寫職稱。';
@@ -271,11 +281,14 @@
         const isNew = selectedReason() === '新進人員';
         confirmationSummary.textContent = '';
         addSummaryRow('申請原因', selectedReason());
-        addSummaryRow('職稱', isNew ? document.getElementById('title').value.trim() : '不適用');
         addSummaryRow('姓名', document.getElementById('name').value.trim());
-        addSummaryRow('出生年月日', isNew ? rocDateForDisplay(document.getElementById('birthDate').value) : '不適用');
-        addSummaryRow('身分證字號', isNew ? document.getElementById('nationalId').value.trim().toUpperCase() : '不適用');
-        addSummaryRow('聯絡電話', isNew ? document.getElementById('phone').value.trim() : '不適用');
+        addSummaryRow('Email', document.getElementById('email').value.trim());
+        if (isNew) {
+          addSummaryRow('職稱', document.getElementById('title').value.trim());
+          addSummaryRow('出生年月日', rocDateForDisplay(document.getElementById('birthDate').value));
+          addSummaryRow('身分證字號', document.getElementById('nationalId').value.trim().toUpperCase());
+          addSummaryRow('聯絡電話', document.getElementById('phone').value.trim());
+        }
         setConfirmStatus('');
         confirmButton.classList.remove('hidden');
         backButton.classList.remove('hidden');
@@ -296,7 +309,8 @@
       }
 
       window.addEventListener('message', (event) => {
-        if (event.source !== submitFrame.contentWindow || !event.data) return;
+        // 新版後端有 source；舊版後端沒有 source，但仍會回傳 ok/recordId。
+        if (!event.data || (event.data.source !== 'account-application-backend' && typeof event.data.ok !== 'boolean')) return;
         submitButton.disabled = false;
         confirmButton.disabled = false;
         backButton.disabled = false;
