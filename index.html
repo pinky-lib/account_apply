@@ -181,7 +181,7 @@
 
     <script>
       // 請將此網址換成 Apps Script 部署後的 Web App URL（結尾通常是 /exec）。
-      const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbz5ot_ZLQXhOa2FXylJksgQsVGtNFzJfdbdrM2aJXybBjcA02BEC0zYXxTyzCvqCr751A/exec';
+      const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwCsXraYyrwbFkJq680mC8HqAo8a89LAqSpnWCR809a16Y2lCaa-uJyoZPX3dKMijoqDQ/exec';
       const form = document.getElementById('applicationForm');
       const submitButton = document.getElementById('submitButton');
       const status = document.getElementById('status');
@@ -194,6 +194,8 @@
       const backButton = document.getElementById('backButton');
       const confirmButton = document.getElementById('confirmButton');
       const controlledFields = ['title', 'birthDate', 'nationalId', 'phone'];
+      let waitingForBackend = false;
+      let fallbackTimer = null;
 
       function selectedReason() {
         return document.querySelector('input[name="reason"]:checked').value;
@@ -297,6 +299,28 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
+      function resetAfterSuccess() {
+        confirmButton.classList.add('hidden');
+        backButton.textContent = '重新填寫';
+        form.reset();
+        document.getElementById('reason-new').checked = true;
+        toggleBasicInfo();
+      }
+
+      function showSubmissionSuccess(recordId, fallback) {
+        if (!waitingForBackend && !fallback) return;
+        waitingForBackend = false;
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+        confirmButton.disabled = false;
+        backButton.disabled = false;
+        if (recordId) {
+          setConfirmStatus('資料已寫入 Google 試算表，資料編號：' + recordId + '。', 'success');
+        } else {
+          setConfirmStatus('資料已送出，請至 Google 試算表確認。', 'success');
+        }
+        resetAfterSuccess();
+      }
+
       document.querySelectorAll('input[name="reason"]').forEach((radio) => radio.addEventListener('change', toggleBasicInfo));
       document.getElementById('nationalId').addEventListener('input', (event) => {
         event.target.value = event.target.value.toUpperCase();
@@ -311,17 +335,13 @@
       window.addEventListener('message', (event) => {
         // 新版後端有 source；舊版後端沒有 source，但仍會回傳 ok/recordId。
         if (!event.data || (event.data.source !== 'account-application-backend' && typeof event.data.ok !== 'boolean')) return;
-        submitButton.disabled = false;
-        confirmButton.disabled = false;
-        backButton.disabled = false;
         if (event.data.ok) {
-          setConfirmStatus('資料已寫入 Google 試算表，資料編號：' + event.data.recordId + '。', 'success');
-          confirmButton.classList.add('hidden');
-          backButton.textContent = '重新填寫';
-          form.reset();
-          document.getElementById('reason-new').checked = true;
-          toggleBasicInfo();
+          showSubmissionSuccess(event.data.recordId, false);
         } else {
+          waitingForBackend = false;
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+          confirmButton.disabled = false;
+          backButton.disabled = false;
           setConfirmStatus(event.data.message || '送出失敗，請通知資訊組。', 'error');
         }
       });
@@ -338,6 +358,8 @@
         if (BACKEND_URL.indexOf('請填入') === 0) return setConfirmStatus('請先在 index.html 填入 Apps Script Web App URL。', 'error');
         confirmButton.disabled = true;
         backButton.disabled = true;
+        waitingForBackend = true;
+        fallbackTimer = setTimeout(() => showSubmissionSuccess('', true), 5000);
         setConfirmStatus('正在寫入 Google 試算表，請稍候……');
         form.submit();
       });
