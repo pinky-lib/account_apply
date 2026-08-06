@@ -4,7 +4,7 @@
     <base target="_top">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>帳號申請單</title>
+    <title>蘭潭國中資通系統帳號申請</title>
     <style>
       :root {
         --navy: #183b56;
@@ -104,7 +104,6 @@
       <header class="hero">
         <div class="eyebrow" id="schoolName">嘉義市蘭潭國中資通系統帳號申請</div>
         <h1 id="formTitle">資通系統帳號註冊／註銷／異動申請單</h1>
-        <p class="subtitle">請依申請原因填寫資料；新進人員需填寫 Email。</p>
       </header>
 
       <div id="formPage">
@@ -156,7 +155,7 @@
               <input id="email" name="email" type="email" maxlength="120" autocomplete="email" placeholder="例如：name@school.edu.tw" required>
             </div>
           </div>
-          <div class="note" id="basicInfoNote">目前選擇「新進人員」，請填寫完整基本資料及 Email。</div>
+          <div class="note" id="basicInfoNote">目前選擇「新進人員」，請填寫完整基本資料</div>
         </section>
 
         <section class="card">
@@ -240,7 +239,7 @@
           if (!isNew) element.value = '';
         });
         basicInfoNote.textContent = isNew
-          ? '目前選擇「新進人員」，請填寫完整基本資料及 Email。'
+          ? '目前選擇「新進人員」，請填寫完整基本資料'
           : '目前選擇的申請原因只需填寫姓名，其他基本資料不會寫入申請紀錄。';
       }
 
@@ -379,7 +378,6 @@
         backButton.disabled = true;
         waitingForBackend = true;
         fallbackTimer = setTimeout(() => showSubmissionSuccess('', true), 5000);
-        setConfirmStatus('正在寫入 Google 試算表，請稍候……');
         form.submit();
       });
 
